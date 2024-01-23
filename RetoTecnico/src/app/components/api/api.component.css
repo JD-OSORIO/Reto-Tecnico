@@ -1,0 +1,39 @@
+.eliminar{
+  margin-left: 5%;
+}
+.boton{
+  margin-top: 10px;
+  margin-bottom: 10px;
+  display: flex;
+}
+
+
+.btn-ver-imagen {
+  background-color: #4caf50; /* Color de fondo verde */
+  color: #fff; /* Color del texto blanco */
+  border: 1px solid #4caf50; /* Borde verde */
+  padding: 8px 12px; /* Espaciado interno */
+  cursor: pointer; /* Cambiar el cursor al pasar el ratón */
+  border-radius: 1em;
+}
+
+.btn-ver-imagen:hover {
+  background-color: #45a049; /* Cambiar el color de fondo al pasar el ratón */
+  border: 1px solid #45a049; /* Cambiar el color del borde al pasar el ratón */
+}
+
+.fa-file-pdf{
+  color: red;
+}
+.fa-paste{
+  color: blue;
+}
+
+.form-check-input:checked {
+  box-shadow: 0 0 5px 2px #5c85b8; /* Sombra verde para resaltar */
+}
+.form-check-input {
+  box-shadow: 0 0 2px 1px #000000;
+}
+
+
