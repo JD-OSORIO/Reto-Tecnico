@@ -1,6 +1,8 @@
 import { Component, NgZone, OnInit, Renderer2 } from '@angular/core';
 import { ApifService } from '../../services/apif.service';
 import Swal from 'sweetalert2';
+import jsPDF from 'jspdf';
+import { ClipboardService } from 'ngx-clipboard';
 
 @Component({
   selector: 'app-api',
@@ -15,7 +17,8 @@ export class ApiComponent implements OnInit {
 
   constructor(private apiService: ApifService,
               private renderer: Renderer2,
-              private zone: NgZone) {
+              private zone: NgZone,
+              private clipboardService: ClipboardService) {
   }
 
   ngOnInit(): void {
@@ -109,5 +112,55 @@ export class ApiComponent implements OnInit {
         });
       }
     });
+  }
+
+  generarPDF(item: any): void {
+    const pdf = new jsPDF();
+
+    // Agregar información de la API al PDF
+    pdf.text(`ID: ${item.id}`, 10, 10);
+    pdf.text(`Título: ${item.title}`, 10, 20);
+    pdf.text(`Precio: ${item.price}`, 10, 30);
+
+    // Agregar la imagen del producto al PDF
+    if (item.image) {
+      pdf.addImage(item.image, 'JPEG', 10, 40, 180, 120);
+    }
+
+    // Guardar el PDF con el nombre basado en el ID
+    pdf.save(`producto_${item.id}.pdf`);
+  }
+
+  copiar(titulo: string): void {
+    this.clipboardService.copyFromContent(titulo);
+    Swal.fire({
+      position: "top-end",
+      icon: "success",
+      title: "Copiado Correctamente",
+      showConfirmButton: false,
+      timer: 1000
+    });
+  }
+
+  imprimir(item: any): void {
+    const printContent = `
+      <div>
+        <h2>${item.title}</h2>
+        <p>ID: ${item.id}</p>
+        <p>Precio: ${item.price}</p>
+        <!-- Agrega más información según tus necesidades -->
+        <img src="${item.image}" alt="Imagen" style="max-width: 100%;">
+      </div>
+    `;
+    const ventanaImpresion = window.open('', '_blank');
+
+    if (ventanaImpresion) {
+      ventanaImpresion.document.write(printContent);
+      ventanaImpresion.document.close();
+      ventanaImpresion.print();
+      ventanaImpresion.onafterprint = () => ventanaImpresion.close();
+    } else {
+      console.error('No se pudo abrir la ventana de impresión. Asegúrate de que los bloqueadores de ventanas emergentes estén desactivados.');
+    }
   }
 }

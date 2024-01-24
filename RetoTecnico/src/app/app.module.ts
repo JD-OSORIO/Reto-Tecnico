@@ -8,6 +8,7 @@ import { InicioComponent } from './components/inicio/inicio.component';
 import { ApiComponent } from './components/api/api.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { ClipboardModule } from 'ngx-clipboard';
 
 @NgModule({
   declarations: [
@@ -20,7 +21,8 @@ import { HttpClientModule } from '@angular/common/http';
     AppRoutingModule,
     ReactiveFormsModule,
     HttpClientModule,
-    DataTablesModule
+    DataTablesModule,
+    ClipboardModule
   ],
   providers: [
     provideClientHydration()
