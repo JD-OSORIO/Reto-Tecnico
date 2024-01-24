@@ -159,7 +159,15 @@ export class ApiComponent implements OnInit {
       ventanaImpresion.print();
       ventanaImpresion.onafterprint = () => ventanaImpresion.close();
     } else {
-      console.error('No se pudo abrir la ventana de impresión. Asegúrate de que los bloqueadores de ventanas emergentes estén desactivados.');
+    Swal.fire({
+      position: "top-end",
+      icon: "error",
+      title: "No se pudo abrir la ventana de impresión.",
+      text: "Asegúrate de que los bloqueadores de ventanas emergentes estén desactivados.",
+      showConfirmButton: false,
+      timer: 1500
+    });
+      console.error('No se pudo abrir la ventana de impresión.');
     }
   }
 }
