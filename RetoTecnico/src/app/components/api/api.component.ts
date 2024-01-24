@@ -148,7 +148,6 @@ export class ApiComponent implements OnInit {
         <h2>${item.title}</h2>
         <p>ID: ${item.id}</p>
         <p>Precio: ${item.price}</p>
-        <!-- Agrega más información según tus necesidades -->
         <img src="${item.image}" alt="Imagen" style="max-width: 100%;">
       </div>
     `;
