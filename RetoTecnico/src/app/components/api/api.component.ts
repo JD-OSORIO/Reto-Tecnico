@@ -1,4 +1,4 @@
-import { Component, NgZone, OnInit, Renderer2 } from '@angular/core';
+import { Component, OnInit} from '@angular/core';
 import { ApifService } from '../../services/apif.service';
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
@@ -10,14 +10,16 @@ import { ClipboardService } from 'ngx-clipboard';
   styleUrls: ['./api.component.css']
 })
 export class ApiComponent implements OnInit {
-
+  //Variables
   listaApi: any[] = [];
   preciosSeleccionados: number[] = [];
+  productosSeleccionados: any[] = [];
+  mostrarPopup: boolean = false;
+  productosSeleccionadosVacios: boolean = true;
+  productosSeleccionadosPopup: any[] = [];
   dtOptions: DataTables.Settings = {};
 
   constructor(private apiService: ApifService,
-              private renderer: Renderer2,
-              private zone: NgZone,
               private clipboardService: ClipboardService) {
   }
 
@@ -53,22 +55,35 @@ export class ApiComponent implements OnInit {
   }
 
 
+
+
   onCheckboxChange(item: any): void {
-    // Lógica para manejar cambios en las casillas de verificación
     const precio = item.price;
+
     if (this.preciosSeleccionados.includes(precio)) {
       // Si ya está en la lista, quitarlo
       this.preciosSeleccionados = this.preciosSeleccionados.filter(p => p !== precio);
+      this.productosSeleccionados = this.productosSeleccionados.filter(p => p.id !== item.id);
     } else {
       // Si no está en la lista, agregarlo
       this.preciosSeleccionados.push(precio);
+      this.productosSeleccionados.push(item);
     }
+
+    this.productosSeleccionadosVacios = this.productosSeleccionados.length === 0;
+
     console.log('Precios seleccionados:', this.preciosSeleccionados);
+    console.log('Productos seleccionados:', this.productosSeleccionados);
   }
 
   calcularSuma(): void {
+    // Filtra la lista de productos seleccionados que aún están presentes
+    const productosSeleccionadosPresentes = this.productosSeleccionados.filter(
+      producto => this.listaApi.some(item => item.id === producto.id)
+    );
+
     // Lógica para calcular la suma de los precios seleccionados
-    const suma = this.preciosSeleccionados.reduce((total, precio) => total + precio, 0);
+    const suma = productosSeleccionadosPresentes.reduce((total, producto) => total + producto.price, 0);
 
     if (suma > 0) {
       Swal.fire({
@@ -87,10 +102,10 @@ export class ApiComponent implements OnInit {
     }
   }
 
-  eliminarCheckbox(){
+  eliminarCheckbox(producto: any): void {
     Swal.fire({
       title: "Estas Seguro?",
-      text: "No podras revertirlo!",
+      text: "Eliminaras este producto, No podras revertirlo!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -98,18 +113,73 @@ export class ApiComponent implements OnInit {
       confirmButtonText: "Si, Eliminar"
     }).then((result) => {
       if (result.isConfirmed) {
+        // Filtrar los productos y precios seleccionados
+        this.preciosSeleccionados = this.preciosSeleccionados.filter(p => p !== producto.price);
+        this.productosSeleccionados = this.productosSeleccionados.filter(p => p.id !== producto.id);
+
+        // Actualizar las variables
+        this.preciosSeleccionados = [...this.preciosSeleccionados];
+        this.productosSeleccionados = [...this.productosSeleccionados];
+
+        // Desmarcar la casilla de verificación en la tabla
+        const checkboxId = `checkNoLabel${producto.id}`;
+        const checkbox = document.getElementById(checkboxId) as HTMLInputElement;
+
+        if (checkbox) {
+          checkbox.checked = false;
+        }
+      }
+    });
+  }
+
+  eliminarTodo() {
+    if (this.productosSeleccionados.length === 0) {
+      Swal.fire({
+        title: "Error",
+        text: "No hay productos seleccionados para eliminar",
+        icon: "error",
+        confirmButtonText: "Cerrar",
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: "Estas Seguro?",
+      text: "Eliminaras todo lo seleccionado, No podras revertirlo!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Si, Eliminar"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Eliminar cada producto seleccionado
+        this.productosSeleccionados.forEach((producto) => {
+          this.apiService.deleteProductById(producto.id).subscribe(
+            () => {
+              // Eliminar el producto de la lista actual
+              this.listaApi = this.listaApi.filter((item) => item.id !== producto.id);
+
+              // Eliminar el producto del array de productos seleccionados
+              this.productosSeleccionados = this.productosSeleccionados.filter((p) => p.id !== producto.id);
+
+              // Actualizar la lista en el popup también
+              this.productosSeleccionadosPopup = this.productosSeleccionadosPopup.filter((p) => p.id !== producto.id);
+            },
+            (error) => {
+              console.error('Error al eliminar el producto', error);
+            }
+          );
+        });
+
         Swal.fire({
           title: "Eliminado",
           text: "Tus Selecciones han sido borradas",
           icon: "success"
         });
-        this.zone.runOutsideAngular(() => {
-          setTimeout(() => {
-            this.zone.run(() => {
-              this.renderer.setProperty(document.location, 'href', document.location.href);
-            });
-          }, 1000);
-        });
+
+        // Cerrar el popup
+        this.cerrarPopup();
       }
     });
   }
@@ -143,31 +213,66 @@ export class ApiComponent implements OnInit {
   }
 
   imprimir(item: any): void {
-    const printContent = `
-      <div>
-        <h2>${item.title}</h2>
-        <p>ID: ${item.id}</p>
-        <p>Precio: ${item.price}</p>
-        <img src="${item.image}" alt="Imagen" style="max-width: 100%;">
-      </div>
-    `;
-    const ventanaImpresion = window.open('', '_blank');
+    const printContent = document.createElement('div');
 
-    if (ventanaImpresion) {
-      ventanaImpresion.document.write(printContent);
-      ventanaImpresion.document.close();
-      ventanaImpresion.print();
-      ventanaImpresion.onafterprint = () => ventanaImpresion.close();
-    } else {
-    Swal.fire({
-      position: "top-end",
-      icon: "error",
-      title: "No se pudo abrir la ventana de impresión.",
-      text: "Asegúrate de que los bloqueadores de ventanas emergentes estén desactivados.",
-      showConfirmButton: false,
-      timer: 1500
-    });
-      console.error('No se pudo abrir la ventana de impresión.');
-    }
+    const title = document.createElement('h2');
+    title.innerText = item.title;
+    printContent.appendChild(title);
+
+    const idParagraph = document.createElement('p');
+    idParagraph.innerText = `ID: ${item.id}`;
+    printContent.appendChild(idParagraph);
+
+    const priceParagraph = document.createElement('p');
+    priceParagraph.innerText = `Precio: ${item.price}`;
+    printContent.appendChild(priceParagraph);
+
+    const image = document.createElement('img');
+    image.src = item.image;
+    image.alt = 'Imagen';
+    image.style.maxWidth = '100%';
+    // Agregar evento de carga para asegurarse de que la imagen esté completamente cargada
+    image.onload = () => {
+      const ventanaImpresion = window.open('', '_blank');
+
+      if (ventanaImpresion) {
+        printContent.appendChild(image); // Agregar la imagen después de que se haya cargado
+        ventanaImpresion.document.write(printContent.innerHTML);
+        ventanaImpresion.document.close();
+        ventanaImpresion.print();
+        ventanaImpresion.onafterprint = () => ventanaImpresion.close();
+      } else {
+        Swal.fire({
+          position: 'top-end',
+          icon: 'error',
+          title: 'No se pudo abrir la ventana de impresión.',
+          text: 'Asegúrate de que los bloqueadores de ventanas emergentes estén desactivados.',
+          showConfirmButton: false,
+          timer: 1500
+        });
+        console.error('No se pudo abrir la ventana de impresión.');
+      }
+    };
+
+    // Manejar el caso en que la imagen no se cargue correctamente
+    image.onerror = () => {
+      console.error('Error al cargar la imagen para imprimir.');
+      Swal.fire({
+        position: 'top-end',
+        icon: 'error',
+        title: 'Error al cargar la imagen para imprimir.',
+        showConfirmButton: false,
+        timer: 1500
+      });
+    };
+  }
+
+  abrirPopup(): void {
+    this.mostrarPopup = true;
+    this.productosSeleccionadosPopup = [...this.productosSeleccionados];
+  }
+
+  cerrarPopup(): void {
+    this.mostrarPopup = false;
   }
 }

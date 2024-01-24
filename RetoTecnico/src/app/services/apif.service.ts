@@ -14,4 +14,8 @@ export class ApifService {
   getNotes(): Observable<any>{
     return this.http.get(this.url)
   }
+  deleteProductById(productId: number): Observable<any> {
+    const apiUrl = `${this.url}/${productId}`;
+    return this.http.delete(apiUrl);
+  }
 }

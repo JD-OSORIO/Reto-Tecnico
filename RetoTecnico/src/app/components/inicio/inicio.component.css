@@ -1,0 +1,5 @@
+.container-fluid {background: linear-gradient(to right, #3498db, #2c3e50);color: #fff; }
+.display-3 {font-size: 3.5rem;font-weight: bold;}
+.lead {font-size: 1.25rem; margin-bottom: 1.5rem; }
+.btn-primary {background-color: #1abc9c; border-color: #16a085; }
+.btn-primary:hover {background-color: #16a085;border-color: #1abc9c;}
